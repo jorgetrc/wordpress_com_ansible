@@ -1,13 +1,18 @@
-- hosts: all
-  tasks:
-    - name: "Instala pacotes de dependencias do SO"
+- hosts: database
+  tasks: 
+    - name: Update apt package cache
       apt:
-        name: ['php5', 'apache2', 'libapache2-mod-php5', 'php5-gd', 'libssh2-php', 'php5-mcrypt', 'mysql-server-5.6', 'python-mysqldb', 'php5-mysql']
+        update_cache: yes
+      become: yes
+    - name: Instala pacotes de dependencias do sistema operacional
+      apt:
+        name: ['mysql-server-8.0', 'python3-mysqldb']
         state: latest
       become: yes
   
     - name: 'Cria o banco do MySQL'
       mysql_db: 
+        db_host: 192.168.15.21
         name: wordpress_db
         login_user: root
         state: present            
@@ -19,6 +24,25 @@
         password: 12345
         priv: 'wordpress_db.*:ALL'
         state: present
+
+
+- hosts: wordpress
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+      become: yes
+    - name: Instala pacotes de dependencias do sistema operacional
+      apt:
+        name: ['php8.1', 'apache2', 'libapache2-mod-php8', 'php8.1-gd', 'python3-mysqldb', 'php8.1-mysql']
+        state: latest
+      become: yes
+  handlers:
+    - name: restart apache
+      service:
+        name: apache2
+        state: restarted
+      become: yes
 
     - name: 'Baixa o arquivo de instalacao do Wordpress'
       get_url:
@@ -48,3 +72,11 @@
         - { regex: 'username_here', value: 'wordpress_user'}
         - { regex: 'password_here', value: '12345'}
       become: yes
+
+    - name: 'Configura Apache para servir o Wordpress'
+      copy:
+       src: 'files/000-default.conf'
+       dest: '/etc/apache2/sites-available/000-default.conf'
+      become: yes
+      notify:
+       - restart apache
