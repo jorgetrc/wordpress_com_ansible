@@ -1,0 +1,11 @@
+---
+- name: Update apt package cache
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: Instala pacotes de dependencias do sistema operacional
+  apt:
+    name: ['php8.1', 'apache2', 'libapache2-mod-php8.1', 'php8.1-gd', 'python3-mysqldb', 'php8.1-mysql']
+    state: latest
+  become: yes
